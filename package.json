@@ -1,0 +1,37 @@
+{
+  "name": "react-native-honeywell-scanner",
+  "version": "1.0.0",
+  "description": "Honeywell barcode scanner integration for React Native",
+  "main": "src/index",
+  "types": "src/index",
+  "files": [
+    "src",
+    "android",
+    "README.md"
+  ],
+  "keywords": [
+    "react-native",
+    "honeywell",
+    "scanner",
+    "barcode"
+  ],
+  "author": "Ashish",
+  "license": "MIT",
+  "peerDependencies": {
+    "react": "*",
+    "react-native": "*"
+  },
+  "devDependencies": {
+    "react": "19.2.3",
+    "react-native": "0.85.3",
+    "typescript": "^5.8.3"
+  },
+  "codegenConfig": {
+    "name": "NativeHoneywellScannerSpec",
+    "type": "modules",
+    "jsSrcsDir": "src",
+    "android": {
+      "javaPackageName": "com.honeywellscanner"
+    }
+  }
+}

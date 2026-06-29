@@ -1,0 +1,62 @@
+buildscript {
+    ext.kotlin_version = "1.8.0"
+    repositories {
+        google()
+        mavenCentral()
+    }
+    dependencies {
+        classpath "com.android.tools.build:gradle:8.1.1"
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+    }
+}
+
+apply plugin: "com.android.library"
+apply plugin: "kotlin-android"
+
+def isNewArchitectureEnabled() {
+    return project.hasProperty("newArchEnabled") && project.newArchEnabled == "true"
+}
+
+android {
+    namespace "com.honeywellscanner"
+    compileSdk 34
+
+    defaultConfig {
+        minSdk 21
+        targetSdk 34
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+        }
+    }
+
+    sourceSets {
+        main {
+            java.srcDirs += "${project.buildDir}/generated/source/codegen/java"
+        }
+    }
+}
+
+repositories {
+    mavenCentral()
+    google()
+}
+
+dependencies {
+    // For React Native integration
+    implementation "com.facebook.react:react-android"
+
+    // Include the local Honeywell AAR SDK binary
+    implementation files("libs/DataCollection.aar")
+}
+
+if (isNewArchitectureEnabled()) {
+    react {
+        jsRootDir = file("../src")
+        codegenDir = file("../node_modules/@react-native/codegen")
+        libraryName = "HoneywellScanner"
+        codegenJavaPackageName = "com.honeywellscanner"
+    }
+}
