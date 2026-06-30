@@ -14,7 +14,11 @@ apply plugin: "com.android.library"
 apply plugin: "kotlin-android"
 
 def isNewArchitectureEnabled() {
-    return project.hasProperty("newArchEnabled") && project.newArchEnabled == "true"
+    return rootProject.hasProperty("newArchEnabled") && rootProject.getProperty("newArchEnabled") == "true"
+}
+
+if (isNewArchitectureEnabled()) {
+    apply plugin: "com.facebook.react"
 }
 
 android {
@@ -49,14 +53,5 @@ dependencies {
     implementation "com.facebook.react:react-android"
 
     // Include the local Honeywell AAR SDK binary
-    implementation files("libs/DataCollection.aar")
-}
-
-if (isNewArchitectureEnabled()) {
-    react {
-        jsRootDir = file("../src")
-        codegenDir = file("../node_modules/@react-native/codegen")
-        libraryName = "HoneywellScanner"
-        codegenJavaPackageName = "com.honeywellscanner"
-    }
+    compileOnly files("libs/DataCollection.aar")
 }

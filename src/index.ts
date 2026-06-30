@@ -15,7 +15,10 @@ export interface BarcodeReadFailEvent {
 
 export type ScannerStatus = 'UNSUPPORTED' | 'NOT_INITIALIZED' | 'INITIALIZING' | 'READY' | 'RELEASED' | 'ERROR';
 
-const isSupported = Platform.OS === 'android' && !!NativeHoneywellScanner;
+const isSupported =
+  Platform.OS === 'android' &&
+  !!NativeHoneywellScanner &&
+  (Platform.constants as any).Manufacturer?.toLowerCase().includes('honeywell');
 
 // Cast to any because NativeEventEmitter expects a NativeModule interface in some React Native typings
 const eventEmitter = isSupported ? new NativeEventEmitter(NativeHoneywellScanner as any) : null;
@@ -73,7 +76,7 @@ export const HoneywellScannerBridge = {
    */
   onBarcodeRead(callback: (event: BarcodeReadSuccessEvent) => void): () => void {
     if (!eventEmitter) {
-      return () => {};
+      return () => { };
     }
     const subscription = eventEmitter.addListener('barcodeReadSuccess', callback);
     return () => {
@@ -87,7 +90,7 @@ export const HoneywellScannerBridge = {
    */
   onBarcodeReadFail(callback: (event: BarcodeReadFailEvent) => void): () => void {
     if (!eventEmitter) {
-      return () => {};
+      return () => { };
     }
     const subscription = eventEmitter.addListener('barcodeReadFail', callback);
     return () => {
@@ -96,4 +99,5 @@ export const HoneywellScannerBridge = {
   }
 };
 
+export { default as useHoneywellScanner } from './useHoneywellScanner';
 export default HoneywellScannerBridge;
