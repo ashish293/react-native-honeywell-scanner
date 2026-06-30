@@ -9,7 +9,8 @@ A lightweight, modern React Native TurboModule integration for physical Honeywel
 - **TurboModule Support**: Ready for React Native's New Architecture.
 - **Hardware Bindings**: Interfaces directly with Honeywell's native decoder engine.
 - **Auto Lifecycle Handling**: Automatically releases scanner hardware when the app is paused/backgrounded, and re-claims it upon returning to the foreground.
-- **Software Triggers**: Programmatically fire the red laser/imager from JavaScript.
+- **Stateful Software Triggers**: Programmatically fire the scanning beam from JavaScript with auto-resets on success or fail.
+- **Runtime Properties Configuration**: Enable/disable specific barcode types and configure scanner properties dynamically from the JS layer.
 - **Symbology Support**: Provides decoded barcode strings alongside metadata (Symbology, Aim ID, Charset, Timestamps).
 
 ---
@@ -54,65 +55,89 @@ Add the following permission inside your main project's `android/app/src/main/An
 ## Usage
 
 ### The Recommended Hook Way: `useHoneywellScanner`
-The easiest way to integrate scanning is by using the custom hook, which automatically handles the complete lifecycle (initialization, event subscription, focus/blur claims, and unmount cleanups):
+The custom hook handles the complete lifecycle (initialization, event subscription, focus/blur claims, and unmount cleanups) and exposes helper actions to control software triggers dynamically:
 
 ```typescript
 import React, { useState, useCallback } from 'react';
-import { StyleSheet, Text, View, Alert } from 'react-native';
-import { useHoneywellScanner, BarcodeReadSuccessEvent } from 'react-native-honeywell-scanner';
+import { StyleSheet, Text, View, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
+import { useHoneywellScanner } from 'react-native-honeywell-scanner';
 import { useIsFocused } from '@react-navigation/native';
 
 export default function App() {
   const isFocused = useIsFocused();
   const [scannedText, setScannedText] = useState<string>('');
 
-  const { status, errorMsg } = useHoneywellScanner(
+  const { status, isScanning, errorMsg, toggleScan } = useHoneywellScanner(
     useCallback((data: string) => {
       setScannedText(data);
-      Alert.alert('Scanned', data);
     }, []),
-    isFocused
+    isFocused,
+    {
+      onFailure: (err) => {
+        Alert.alert('Scan Failed', err);
+      },
+      properties: {
+        // Example: disable Aztec symbology, enable QR Code
+        "symbology_aztec_enabled": false,
+        "symbology_qr_enabled": true,
+      }
+    }
   );
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Scanner Status: {status}</Text>
+      <Text style={styles.title}>Status: {status}</Text>
       {errorMsg ? <Text style={styles.error}>{errorMsg}</Text> : null}
+      
       <Text style={styles.result}>Result: {scannedText}</Text>
+
+      <TouchableOpacity
+        onPress={toggleScan}
+        style={styles.button}
+        disabled={status !== 'READY'}
+      >
+        {isScanning ? (
+          <ActivityIndicator color="white" />
+        ) : (
+          <Text style={styles.buttonText}>Trigger Scanner</Text>
+        )}
+      </TouchableOpacity>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  title: { fontSize: 18, fontWeight: 'bold' },
+  container: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F8F9FC' },
+  title: { fontSize: 18, fontWeight: 'bold', color: '#1E1E24' },
   error: { color: 'red', marginTop: 8 },
-  result: { marginTop: 20, fontSize: 16 }
+  result: { marginVertical: 30, fontSize: 16, color: '#6E6E77' },
+  button: { backgroundColor: '#FF2D55', paddingHorizontal: 24, paddingVertical: 14, borderRadius: 8 },
+  buttonText: { color: 'white', fontWeight: 'bold' }
 });
 ```
-
-> [!IMPORTANT]
-> **Camera Imager Conflict Resolution**:
-> Honeywell physical barcode readers use the internal imager hardware. If your screen uses a camera component (e.g., `react-native-vision-camera`), it locks the camera resource and blocks the physical scanner.
-> Always disable the camera component's `isActive` property when the Honeywell scanner is supported:
-> ```jsx
-> <Camera isActive={!HoneywellScannerBridge.isSupported && cameraEnabled} />
-> ```
 
 ---
 
 ## API Reference
 
-### `useHoneywellScanner(onSuccess: (data: string) => void, isFocused?: boolean)`
+### `useHoneywellScanner(onSuccess, isFocused, options)`
 A custom hook that initializes, claims, and releases the hardware scanner.
-- **`onSuccess`**: Callback triggered with the decoded barcode string on a successful scan.
-- **`isFocused`**: (Optional, default `true`). Controls focus/blur transition. When `false`, the hook automatically releases control of the scanner engine so other screens/apps can claim it.
+- **`onSuccess`**: `(data: string) => void` - Callback triggered with the decoded barcode string on a successful scan.
+- **`isFocused`**: `boolean` - (Optional, default `true`). Controls focus/blur transition. When `false`, the hook automatically releases control of the scanner engine.
+- **`options`**: `UseHoneywellScannerOptions` - (Optional) custom handlers and properties configurations.
+  - `onFailure?: (error: string) => void` - Callback when scanning fails or times out.
+  - `properties?: Record<string, any>` - Map of properties to set on the scanner reader upon claim.
 - **Returns**: An object containing:
   - `status: ScannerStatus` (e.g. `'READY'`, `'INITIALIZING'`, `'RELEASED'`, etc.)
-  - `errorMsg: string`
-  - `claim: () => Promise<boolean>`
-  - `release: () => Promise<boolean>`
-  - `initialized: boolean`
+  - `isScanning: boolean` - Whether the software scanner beam is active.
+  - `errorMsg: string` - Error messages if initialization or claim failed.
+  - `claim: () => Promise<boolean>` - Manually request scanner hardware lock.
+  - `release: () => Promise<boolean>` - Manually release scanner hardware lock.
+  - `startScan: () => Promise<boolean>` - Turn the software scanner beam ON.
+  - `stopScan: () => Promise<boolean>` - Turn the software scanner beam OFF.
+  - `toggleScan: () => Promise<boolean>` - Alternates the software scanner beam.
+
+---
 
 ### `HoneywellScannerBridge`
 
@@ -131,37 +156,8 @@ Relinquishes hardware lock to allow other apps on the device to access the scan 
 #### `softwareTrigger(state: boolean): Promise<boolean>`
 Instructs the hardware engine to trigger scanning. Set to `true` to turn the laser beam on, and `false` to turn it off.
 
-#### `onBarcodeRead(callback: (event: BarcodeReadSuccessEvent) => void): () => void`
-Subscribes to successful barcode scans. Returns an unsubscribe cleanup function.
-
-#### `onBarcodeReadFail(callback: (event: BarcodeReadFailEvent) => void): () => void`
-Subscribes to failed barcode scan actions. Returns an unsubscribe cleanup function.
-
----
-
-### Type Definitions
-
-```typescript
-export interface BarcodeReadSuccessEvent {
-  data: string;       // Decoded barcode text
-  aimId?: string;     // AIM Symbology Identifier
-  charset?: string;   // Output Character Set 
-  codeId?: string;    // Honeywell Symbology Identifier Code (e.g. 's' for QR Code)
-  timestamp?: string; // Decode timestamp
-}
-
-export interface BarcodeReadFailEvent {
-  error: string;
-}
-
-export type ScannerStatus = 
-  | 'UNSUPPORTED' 
-  | 'NOT_INITIALIZED' 
-  | 'INITIALIZING' 
-  | 'READY' 
-  | 'RELEASED' 
-  | 'ERROR';
-```
+#### `setProperties(properties: Record<string, any>): Promise<boolean>`
+Configures hardware properties on the reader device (e.g. toggling specific symbology decoders).
 
 ---
 

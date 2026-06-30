@@ -4,6 +4,8 @@ import com.facebook.react.bridge.Arguments
 import com.facebook.react.bridge.LifecycleEventListener
 import com.facebook.react.bridge.Promise
 import com.facebook.react.bridge.ReactApplicationContext
+import com.facebook.react.bridge.ReadableMap
+import com.facebook.react.bridge.ReadableType
 import com.facebook.react.bridge.WritableMap
 import com.facebook.react.module.annotations.ReactModule
 import com.facebook.react.modules.core.DeviceEventManagerModule
@@ -107,6 +109,39 @@ class HoneywellScannerModule(reactContext: ReactApplicationContext) :
         }
     }
 
+    override fun setProperties(properties: ReadableMap, promise: Promise) {
+        val r = reader
+        if (r == null) {
+            promise.reject("NOT_INITIALIZED", "Scanner not initialized.")
+            return
+        }
+
+        try {
+            val map = mutableMapOf<String, Any>()
+            val iterator = properties.keySetIterator()
+            while (iterator.hasNextKey()) {
+                val key = iterator.nextKey()
+                when (properties.getType(key)) {
+                    ReadableType.Boolean -> map[key] = properties.getBoolean(key)
+                    ReadableType.Number -> {
+                        val num = properties.getDouble(key)
+                        if (num == num.toInt().toDouble()) {
+                            map[key] = num.toInt()
+                        } else {
+                            map[key] = num
+                        }
+                    }
+                    ReadableType.String -> map[key] = properties.getString(key)!!
+                    else -> { /* Ignore array / map properties */ }
+                }
+            }
+            r.setProperties(map)
+            promise.resolve(true)
+        } catch (e: Exception) {
+            promise.reject("PROPERTIES_ERROR", "Failed to set properties: ${e.message}")
+        }
+    }
+
     // Required for TurboModule event emitting
     override fun addListener(eventName: String) {
         // Required by TurboModule spec
@@ -118,21 +153,25 @@ class HoneywellScannerModule(reactContext: ReactApplicationContext) :
 
     // BarcodeReader.BarcodeListener implementation
     override fun onBarcodeEvent(event: BarcodeReadEvent) {
-        val map = Arguments.createMap().apply {
-            putString("data", event.barcodeData)
-            putString("aimId", event.aimId)
-            putString("charset", event.charset?.name() ?: "")
-            putString("codeId", event.codeId)
-            putString("timestamp", event.timestamp)
+        reactApplicationContext.runOnJSQueueThread {
+            val map = Arguments.createMap().apply {
+                putString("data", event.barcodeData)
+                putString("aimId", event.aimId)
+                putString("charset", event.charset?.name() ?: "")
+                putString("codeId", event.codeId)
+                putString("timestamp", event.timestamp)
+            }
+            sendEvent("barcodeReadSuccess", map)
         }
-        sendEvent("barcodeReadSuccess", map)
     }
 
     override fun onFailureEvent(event: BarcodeFailureEvent) {
-        val map = Arguments.createMap().apply {
-            putString("error", "Scan failure")
+        reactApplicationContext.runOnJSQueueThread {
+            val map = Arguments.createMap().apply {
+                putString("error", "Scan failure")
+            }
+            sendEvent("barcodeReadFail", map)
         }
-        sendEvent("barcodeReadFail", map)
     }
 
     // LifecycleEventListener implementation

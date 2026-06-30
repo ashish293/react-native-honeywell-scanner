@@ -6,6 +6,7 @@ export interface Spec extends TurboModule {
   claim(): Promise<boolean>;
   release(): Promise<boolean>;
   softwareTrigger(state: boolean): Promise<boolean>;
+  setProperties(properties: Object): Promise<boolean>;
 
   // Required for emitting device events via NativeEventEmitter inside a TurboModule context
   addListener(eventName: string): void;

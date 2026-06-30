@@ -71,6 +71,17 @@ export const HoneywellScannerBridge = {
   },
 
   /**
+   * Sets properties configuration on the Honeywell barcode reader.
+   * @param properties Key-value map of properties
+   */
+  async setProperties(properties: Record<string, any>): Promise<boolean> {
+    if (!isSupported) {
+      return false;
+    }
+    return NativeHoneywellScanner.setProperties(properties);
+  },
+
+  /**
    * Registers a listener for successful scans.
    * Returns a function to unsubscribe.
    */
