@@ -18,11 +18,11 @@ A lightweight, modern React Native TurboModule integration for physical Honeywel
 ## Installation
 
 ```bash
-npm install git+https://github.com/ashishGenefied/react-native-honeywell-scanner.git
+npm install git+https://github.com/ashish293/react-native-honeywell-scanner.git
 ```
 or with Yarn:
 ```bash
-yarn add git+https://github.com/ashishGenefied/react-native-honeywell-scanner.git
+yarn add git+https://github.com/ashish293/react-native-honeywell-scanner.git
 ```
 
 ### 1. Place Honeywell DataCollection SDK
