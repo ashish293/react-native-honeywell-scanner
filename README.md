@@ -1,4 +1,4 @@
-# react-native-honeywell-scanner
+# @ashish293/react-native-honeywell-scanner
 
 A lightweight, modern React Native TurboModule integration for physical Honeywell Android barcode scanners. It interacts directly with the Honeywell Data Collection Service SDK.
 
@@ -29,7 +29,7 @@ yarn add git+https://github.com/ashish293/react-native-honeywell-scanner.git
 Since Honeywell's `DataCollection.aar` is a proprietary archive file, you must obtain it from the Honeywell Developer Portal and place it inside the library's local directory:
 
 Move `DataCollection.aar` to:
-`node_modules/react-native-honeywell-scanner/android/libs/DataCollection.aar`
+`node_modules/@ashish293/react-native-honeywell-scanner/android/libs/DataCollection.aar`
 
 ### 2. Main App Gradle Configuration
 To comply with Android Gradle Plugin 8+ restrictions (which forbid direct local `.aar` file packaging in libraries), the library compiles the `.aar` as `compileOnly`. You must tell your main application's packaging tool to package this `.aar` by adding it directly to your main app's dependencies:
@@ -39,7 +39,7 @@ Open `android/app/build.gradle` of your project, and append the following line i
 dependencies {
     // ...
     // Include Honeywell's local AAR directly so it compiles and packages in the app
-    implementation files("../../node_modules/react-native-honeywell-scanner/android/libs/DataCollection.aar")
+    implementation files("../../node_modules/@ashish293/react-native-honeywell-scanner/android/libs/DataCollection.aar")
 }
 ```
 
@@ -60,7 +60,7 @@ The custom hook handles the complete lifecycle (initialization, event subscripti
 ```typescript
 import React, { useState, useCallback } from 'react';
 import { StyleSheet, Text, View, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
-import { useHoneywellScanner } from 'react-native-honeywell-scanner';
+import { useHoneywellScanner } from '@ashish293/react-native-honeywell-scanner';
 import { useIsFocused } from '@react-navigation/native';
 
 export default function App() {
