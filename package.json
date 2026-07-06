@@ -1,6 +1,9 @@
 {
-  "name": "react-native-honeywell-scanner",
-  "version": "1.0.0",
+  "name": "@ashish293/react-native-honeywell-scanner",
+  "version": "1.0.1",
+  "publishConfig": {
+    "access": "public"
+  },
   "description": "Honeywell barcode scanner integration for React Native",
   "main": "src/index",
   "types": "src/index",
