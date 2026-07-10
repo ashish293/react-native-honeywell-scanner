@@ -24,6 +24,11 @@ export default function useHoneywellScanner(
   const onSuccessRef = useRef<(data: string) => void>(onSuccess);
   const onFailureRef = useRef<((error: string) => void) | undefined>(options?.onFailure);
   const propertiesRef = useRef<Record<string, any> | undefined>(options?.properties);
+  const isFocusedRef = useRef<boolean>(isFocused);
+
+  useEffect(() => {
+    isFocusedRef.current = isFocused;
+  }, [isFocused]);
 
   const [status, setStatus] = useState<ScannerStatus>(
     HoneywellScannerBridge.isSupported ? 'NOT_INITIALIZED' : 'UNSUPPORTED'
@@ -150,6 +155,7 @@ export default function useHoneywellScanner(
 
     // Register success listener
     const unsubscribeSuccess = HoneywellScannerBridge.onBarcodeRead((event) => {
+      if (!isFocusedRef.current) return;
       console.log('[Honeywell Hook] Scanned event callback triggered:', event?.data);
       // Auto-reset trigger state native-side when scan completes
       HoneywellScannerBridge.softwareTrigger(false).catch(() => { });
@@ -161,6 +167,7 @@ export default function useHoneywellScanner(
 
     // Register fail listener (timeout or trigger release)
     const unsubscribeFail = HoneywellScannerBridge.onBarcodeReadFail((errorEvent) => {
+      if (!isFocusedRef.current) return;
       console.warn('[Honeywell Hook] Scan fail:', errorEvent?.error);
       // Auto-reset trigger state native-side when scan fails
       HoneywellScannerBridge.softwareTrigger(false).catch(() => { });
